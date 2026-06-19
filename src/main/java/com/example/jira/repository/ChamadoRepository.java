@@ -20,6 +20,6 @@ public interface ChamadoRepository extends JpaRepository<Chamado, Integer> {
 
     List<Chamado> findByPrioridade(Prioridade prioridade);
 
-    List<Chamado> findByUsuarioId(Integer usuarioId);
+    List<Chamado> findByUserId(Integer userId);
 
 }
