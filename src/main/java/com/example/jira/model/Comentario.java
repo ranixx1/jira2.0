@@ -20,12 +20,10 @@ public class Comentario {
 
     private LocalDateTime dataHoraCriacao;
 
-    // 👇 usuário vindo do JWT
     private Long userId;
 
     private String username;
 
-    // relacionamento com chamado
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chamado_id")

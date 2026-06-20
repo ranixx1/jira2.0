@@ -6,7 +6,6 @@ import java.util.List;
 
 import jakarta.validation.constraints.NotNull;
 import com.example.jira.enums.Escopo;
-import com.example.jira.enums.Tipo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.example.jira.enums.Status;
 import com.example.jira.enums.Prioridade;
@@ -20,6 +19,8 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import lombok.Getter;
@@ -38,9 +39,16 @@ public class Chamado {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Enumerated(EnumType.STRING)
-    @NotNull(message = "O tipo é obrigatório")
-    private Tipo tipo;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "categoria_id")
+    private Categoria categoria;
+
+    @ManyToOne
+    @JoinColumn(name = "subtopico_id")
+    private Subtopico subtopico;
+
+    @Column(name = "outro_subtopico")
+    private String outroSubtopico;
 
     @Enumerated(EnumType.STRING)
     private Prioridade prioridade;
@@ -71,14 +79,16 @@ public class Chamado {
     private List<Comentario> comentarios = new ArrayList<>();
 
     public Chamado(
-            Tipo tipo,
+            Categoria categoria,
+            Subtopico subtopico,
             Prioridade prioridade,
             Status status,
             String titulo,
             String descricao,
             Escopo escopo) {
 
-        this.tipo = tipo;
+        this.categoria = categoria;
+        this.subtopico = subtopico;
         this.prioridade = prioridade;
         this.status = status;
         this.titulo = titulo;
