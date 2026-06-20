@@ -2,7 +2,8 @@ package com.example.jira.dto;
 
 import com.example.jira.enums.Escopo;
 import com.example.jira.enums.Prioridade;
-import com.example.jira.enums.Tipo;
+import com.example.jira.model.Categoria;
+import com.example.jira.model.Subtopico;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -11,7 +12,8 @@ import lombok.Setter;
 @Setter
 
 public class ChamadoRequest {
-    private Tipo tipo;
+    private Categoria categoria;
+    private Subtopico subtopico;
     private Prioridade prioridade;
     private String titulo;
     private String descricao;
