@@ -6,8 +6,10 @@ import com.example.jira.enums.Escopo;
 import com.example.jira.enums.Prioridade;
 import com.example.jira.enums.Tipo;
 import com.example.jira.enums.Status;
+import com.example.jira.model.Categoria;
 import com.example.jira.model.Chamado;
 import com.example.jira.model.Comentario;
+import com.example.jira.model.Subtopico;
 import com.example.jira.repository.ChamadoRepository;
 import jakarta.persistence.EntityNotFoundException;
 
@@ -21,7 +23,8 @@ public class ChamadoService {
     }
 
     public Chamado criarChamado(
-            Tipo tipo,
+            Categoria categoria,
+            Subtopico subtopico,
             Prioridade prioridade,
             String titulo,
             String descricao,
@@ -29,7 +32,8 @@ public class ChamadoService {
             Long userId) {
 
         Chamado novoChamado = new Chamado(
-                tipo,
+                categoria,
+                subtopico,
                 prioridade,
                 Status.ABERTO,
                 titulo,

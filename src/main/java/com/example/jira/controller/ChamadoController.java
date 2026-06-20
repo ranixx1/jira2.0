@@ -27,7 +27,8 @@ public class ChamadoController {
         Long userId = jwt.getClaim("userId");
 
         Chamado chamado = chamadoService.criarChamado(
-                request.getTipo(),
+                request.getCategoria(),
+                request.getSubtopico(),
                 request.getPrioridade(),
                 request.getTitulo(),
                 request.getDescricao(),
