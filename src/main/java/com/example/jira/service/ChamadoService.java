@@ -4,7 +4,6 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import com.example.jira.enums.Escopo;
 import com.example.jira.enums.Prioridade;
-import com.example.jira.enums.Tipo;
 import com.example.jira.enums.Status;
 import com.example.jira.model.Categoria;
 import com.example.jira.model.Chamado;
@@ -86,10 +85,6 @@ public class ChamadoService {
 
     public List<Chamado> listarChamados() {
         return repository.findAll();
-    }
-
-    public List<Chamado> listarChamadosPorTipo(Tipo tipo) {
-        return repository.findByTipo(tipo);
     }
 
     public List<Chamado> listarChamadoPorStatus(Status status) {

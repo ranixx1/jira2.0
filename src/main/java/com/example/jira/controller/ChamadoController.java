@@ -78,11 +78,6 @@ public class ChamadoController {
         return ResponseEntity.ok(chamadoService.listarChamados());
     }
 
-    @GetMapping("/tipo/{tipo}")
-    public ResponseEntity<List<Chamado>> listarPorTipo(@PathVariable Tipo tipo) {
-        return ResponseEntity.ok(chamadoService.listarChamadosPorTipo(tipo));
-    }
-
     @GetMapping("/status/{status}")
     public ResponseEntity<List<Chamado>> listarPorStatus(@PathVariable Status status) {
         return ResponseEntity.ok(chamadoService.listarChamadoPorStatus(status));
