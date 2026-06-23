@@ -21,7 +21,7 @@ public class Time {
     @Column(nullable = false, unique = true)
     private String nome;
 
-    @ElementCollection(fetch = FetchType.LAZY)
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "time_membros", joinColumns = @JoinColumn(name = "time_id"))
     @Column(name = "user_id")
     private Set<Long> membros = new HashSet<>();
