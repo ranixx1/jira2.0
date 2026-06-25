@@ -75,6 +75,8 @@ public class ChamadoService {
             String username) {
 
         Chamado chamado = buscarChamadoPorId(chamadoId);
+        
+        System.out.println("DEBUG - Mensagem recebida no Service: " + mensagem);
 
         if (chamado.getStatus() == Status.FECHADO) {
             throw new IllegalStateException(
