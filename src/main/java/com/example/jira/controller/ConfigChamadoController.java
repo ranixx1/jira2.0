@@ -2,7 +2,6 @@ package com.example.jira.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import com.example.jira.model.Categoria;
 import com.example.jira.model.Subtopico;
@@ -23,15 +22,13 @@ public class ConfigChamadoController {
 
     @GetMapping("/disponiveis")
     public ResponseEntity<List<Categoria>> listarDisponiveis(Authentication authentication) {
-        Jwt jwt = (Jwt) authentication.getPrincipal();
-        List<Integer> timesIds = jwt.getClaim("timesIds");
-        return ResponseEntity.ok(categoriaRepository.findByTimesIds(timesIds));
+        return ResponseEntity.ok(categoriaRepository.findAll());
     }
 
     @PostMapping("/categorias")
     public ResponseEntity<?> criarCategoria(@RequestParam String nome, @RequestParam Integer timeId) {
         return timeRepository.findById(timeId).map(time -> {
-            Categoria novaCategoria = new Categoria(nome,time);
+            Categoria novaCategoria = new Categoria(nome, time);
             return ResponseEntity.status(201).body(categoriaRepository.save(novaCategoria));
         }).orElse(ResponseEntity.notFound().build());
     }
