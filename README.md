@@ -1,4 +1,4 @@
-# Jira Service
+# Jira 2.0
 
 Versão melhorada do meu Jira anterior. Gerencia chamados, comentários, times, categorias e subtópicos. Valida JWTs emitidos pelo **Authentication Service** para autenticar todas as requisições.
 
