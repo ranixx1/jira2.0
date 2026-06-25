@@ -1,13 +1,12 @@
 package com.example.jira.controller;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import com.example.jira.model.Categoria;
 import com.example.jira.model.Subtopico;
-import com.example.jira.repository.CategoriaRepository;
-import com.example.jira.repository.SubtopicoRepository;
-import com.example.jira.repository.TimeRepository;
+import com.example.jira.service.ChamadoConfigService;
 import lombok.RequiredArgsConstructor;
 import java.util.List;
 
@@ -16,46 +15,50 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ConfigChamadoController {
 
-    private final CategoriaRepository categoriaRepository;
-    private final SubtopicoRepository subtopicoRepository;
-    private final TimeRepository timeRepository;
+    private final ChamadoConfigService configService;
 
     @GetMapping("/disponiveis")
     public ResponseEntity<List<Categoria>> listarDisponiveis(Authentication authentication) {
-        return ResponseEntity.ok(categoriaRepository.findAll());
+        return ResponseEntity.ok(configService.listarDisponiveis());
     }
 
     @PostMapping("/categorias")
     public ResponseEntity<?> criarCategoria(@RequestParam String nome, @RequestParam Integer timeId) {
-        return timeRepository.findById(timeId).map(time -> {
-            Categoria novaCategoria = new Categoria(nome, time);
-            return ResponseEntity.status(201).body(categoriaRepository.save(novaCategoria));
-        }).orElse(ResponseEntity.notFound().build());
+        try {
+            Categoria novaCategoria = configService.criarCategoria(nome, timeId);
+            return ResponseEntity.status(HttpStatus.CREATED).body(novaCategoria);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
     }
 
     @PostMapping("/subtopicos")
     public ResponseEntity<?> criarSubtopico(@RequestParam String nome, @RequestParam Integer categoriaId) {
-        return categoriaRepository.findById(categoriaId).map(categoria -> {
-            Subtopico novoSubtopico = new Subtopico(nome, categoria);
-            return ResponseEntity.status(201).body(subtopicoRepository.save(novoSubtopico));
-        }).orElse(ResponseEntity.notFound().build());
+        try {
+            Subtopico novoSubtopico = configService.criarSubtopico(nome, categoriaId);
+            return ResponseEntity.status(HttpStatus.CREATED).body(novoSubtopico);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
     }
 
     @DeleteMapping("/categorias/{id}")
     public ResponseEntity<Void> deletarCategoria(@PathVariable Integer id) {
-        if (categoriaRepository.existsById(id)) {
-            categoriaRepository.deleteById(id);
+        try {
+            configService.deletarCategoria(id);
             return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.notFound().build();
     }
 
     @DeleteMapping("/subtopicos/{id}")
     public ResponseEntity<Void> deletarSubtopico(@PathVariable Integer id) {
-        if (subtopicoRepository.existsById(id)) {
-            subtopicoRepository.deleteById(id);
+        try {
+            configService.deletarSubtopico(id);
             return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.notFound().build();
     }
 }
