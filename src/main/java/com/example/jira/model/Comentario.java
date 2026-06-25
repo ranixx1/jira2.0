@@ -6,6 +6,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
 
 @Entity
 @Table(name = "comentario")
@@ -29,9 +34,6 @@ public class Comentario {
     @JoinColumn(name = "chamado_id")
     private Chamado chamado;
 
-    // =========================
-    // CONSTRUTOR
-    // =========================
     protected Comentario() {}
 
     public Comentario(String mensagem, Long userId, String username, Chamado chamado) {
@@ -40,56 +42,5 @@ public class Comentario {
         this.username = username;
         this.chamado = chamado;
         this.dataHoraCriacao = LocalDateTime.now();
-    }
-
-    // =========================
-    // GETTERS
-    // =========================
-    public Integer getId() {
-        return id;
-    }
-
-    public String getMensagem() {
-        return mensagem;
-    }
-
-    public LocalDateTime getDataHoraCriacao() {
-        return dataHoraCriacao;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public Chamado getChamado() {
-        return chamado;
-    }
-
-    // =========================
-    // SETTER CHAMADO
-    // =========================
-    public void setChamado(Chamado chamado) {
-        this.chamado = chamado;
-    }
-
-    // =========================
-    // TO STRING
-    // =========================
-    @Override
-    public String toString() {
-        return """
-                comentário
-                ├─ Autor     : %s
-                ├─ Mensagem  : %s
-                ├─ Data/Hora : %s
-                """.formatted(
-                this.username,
-                this.mensagem,
-                this.dataHoraCriacao
-        );
     }
 }
