@@ -7,7 +7,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import com.example.jira.dto.ChamadoRequestDTO;
 import com.example.jira.dto.ChamadoResponseDTO;
-import com.example.jira.dto.ComentarioRequest;
+import com.example.jira.dto.ComentarioRequestDTO;
 import com.example.jira.enums.*;
 import com.example.jira.model.Chamado;
 import com.example.jira.service.ChamadoService;
@@ -38,7 +38,7 @@ public class ChamadoController {
     @PostMapping("/{id}/comentarios")
     public ResponseEntity<ChamadoResponseDTO> comentar(
             @PathVariable Integer id,
-            @Valid @RequestBody ComentarioRequest req,
+            @Valid @RequestBody ComentarioRequestDTO req,
             Authentication authentication) {
 
         Jwt jwt = (Jwt) authentication.getPrincipal();
