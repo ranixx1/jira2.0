@@ -22,8 +22,12 @@ public class Categoria {
     private String nome;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "time_id", nullable = false)
+    @JoinColumn(name = "time_id")
     private Time time;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "portal_id", nullable = false)
+    private Portal portal;
 
     @OneToMany(mappedBy = "categoria", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Subtopico> subtopicos = new ArrayList<>();

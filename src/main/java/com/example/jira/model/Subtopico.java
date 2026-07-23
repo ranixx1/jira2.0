@@ -20,12 +20,12 @@ public class Subtopico {
     @Column(nullable = false)
     private String nome;
 
-    @ManyToOne
-    @JoinColumn(name = "categoria_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "categoria_id", nullable = false)
     @JsonIgnore
     private Categoria categoria;
 
-    public Subtopico(String nome, Categoria categoria) {
+    public Subtopico(String nome, Categoria categoria){
         this.nome = nome;
         this.categoria = categoria;
     }
