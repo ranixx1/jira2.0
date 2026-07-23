@@ -32,8 +32,8 @@ public class Categoria {
     @OneToMany(mappedBy = "categoria", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Subtopico> subtopicos = new ArrayList<>();
 
-    public Categoria(String nome, Time time) {
+    public Categoria(String nome, Portal portal) {
         this.nome = nome;
-        this.time = time;
+        this.portal = portal;
     }
 }

@@ -18,6 +18,8 @@ public class ChamadoRequestDTO {
     @NotBlank
     private String descricao;
     @NotNull
+    private Long portalId;
+    @NotNull
     private Integer categoriaId;
     private Integer subtopicoId;
     private String outroSubtopico;

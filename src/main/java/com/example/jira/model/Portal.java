@@ -1,5 +1,6 @@
 package com.example.jira.model;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,6 +34,8 @@ public class Portal {
 
     @Column(length = 200)
     private String descricao;
+
+    private LocalDateTime criadoEm;
 
     @OneToMany(mappedBy = "portal", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Categoria> categorias = new ArrayList<>();

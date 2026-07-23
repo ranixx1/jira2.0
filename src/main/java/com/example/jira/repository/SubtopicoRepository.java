@@ -7,5 +7,6 @@ import com.example.jira.model.Subtopico;
 
 @Repository
 public interface SubtopicoRepository extends JpaRepository<Subtopico,Integer>{
+    boolean existsByCategoriaIdAndNome(Integer categoriaId, String nome);
     
 }
