@@ -39,6 +39,9 @@ public class Chamado {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @Column(nullable = false, unique = true)
+    private String codigo;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "portal_id")
     private Portal portal;
@@ -83,6 +86,7 @@ public class Chamado {
     private List<Comentario> comentarios = new ArrayList<>();
 
     public Chamado(
+            Portal portal,
             Categoria categoria,
             Subtopico subtopico,
             Prioridade prioridade,
@@ -91,6 +95,7 @@ public class Chamado {
             String descricao,
             Escopo escopo) {
 
+        this.portal = portal;
         this.categoria = categoria;
         this.subtopico = subtopico;
         this.prioridade = prioridade;
@@ -99,6 +104,10 @@ public class Chamado {
         this.descricao = descricao;
         this.escopo = escopo;
     }
+
+    public void gerarCodigo() {
+    this.codigo = portal.getCodigo() + "-" + id;
+}
 
     public void adicionarComentario(Comentario comentario) {
         comentario.setChamado(this);
