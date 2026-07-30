@@ -1,6 +1,7 @@
 package com.example.jira.controller;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -21,8 +22,6 @@ import lombok.RequiredArgsConstructor;
 public class ChamadoController {
 
     private final ChamadoService chamadoService;
-
-    // ChamadoController.java — resolve as entidades no service
     @PostMapping
     public ResponseEntity<ChamadoResponseDTO> criarChamado(
             @Valid @RequestBody ChamadoRequestDTO request,
@@ -51,8 +50,9 @@ public class ChamadoController {
     }
 
     @GetMapping("/id/{id}")
-    public ResponseEntity<Chamado> buscarPorId(@PathVariable Integer id) {
-        return ResponseEntity.ok(chamadoService.buscarChamadoPorId(id));
+    public ResponseEntity<ChamadoResponseDTO> buscarPorId(@PathVariable Integer id) {
+        Chamado chamado = chamadoService.buscarChamadoPorId(id);
+        return ResponseEntity.ok(ChamadoResponseDTO.from(chamado));
     }
 
     @PutMapping("/{id}/status")
@@ -64,17 +64,29 @@ public class ChamadoController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Chamado>> listarTodos() {
-        return ResponseEntity.ok(chamadoService.listarChamados());
+    public ResponseEntity<List<ChamadoResponseDTO>> listarTodos() {
+        List<ChamadoResponseDTO> dtos = chamadoService.listarChamados()
+                .stream()
+                .map(ChamadoResponseDTO::from)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
     }
 
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<Chamado>> listarPorStatus(@PathVariable Status status) {
-        return ResponseEntity.ok(chamadoService.listarChamadoPorStatus(status));
+    public ResponseEntity<List<ChamadoResponseDTO>> listarPorStatus(@PathVariable Status status) {
+        List<ChamadoResponseDTO> dtos = chamadoService.listarChamadoPorStatus(status)
+                .stream()
+                .map(ChamadoResponseDTO::from)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
     }
 
     @GetMapping("/prioridade/{prioridade}")
-    public ResponseEntity<List<Chamado>> listarPorPrioridade(@PathVariable Prioridade prioridade) {
-        return ResponseEntity.ok(chamadoService.listarChamadosPorPrioridade(prioridade));
+    public ResponseEntity<List<ChamadoResponseDTO>> listarPorPrioridade(@PathVariable Prioridade prioridade) {
+        List<ChamadoResponseDTO> dtos = chamadoService.listarChamadosPorPrioridade(prioridade)
+                .stream()
+                .map(ChamadoResponseDTO::from)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
     }
 }
