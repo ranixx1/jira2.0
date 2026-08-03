@@ -1,5 +1,7 @@
 package com.example.jira.service;
 
+import com.example.jira.exception.ResourceAlreadyExistsException;
+import com.example.jira.exception.ResourceNotFoundException;
 import com.example.jira.model.Categoria;
 import com.example.jira.model.Portal;
 import com.example.jira.model.Subtopico;
@@ -32,7 +34,7 @@ public class ChamadoConfigService {
     public Portal criarPortal(String nome, String descricao) {
 
         if (portalRepository.existsByNome(nome)) {
-            throw new IllegalArgumentException("Já existe um portal com esse nome.");
+            throw new ResourceAlreadyExistsException("Já existe um portal com o nome: " + nome);
         }
 
         Portal portal = new Portal(nome, descricao);
@@ -44,10 +46,10 @@ public class ChamadoConfigService {
     public Categoria criarCategoria(String nome, Long portalId) {
 
         Portal portal = portalRepository.findById(portalId)
-                .orElseThrow(() -> new IllegalArgumentException("Portal não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Portal não encontrado com o ID: " + portalId));
 
         if (categoriaRepository.existsByPortalIdAndNome(portalId, nome)) {
-            throw new IllegalArgumentException("Já existe uma categoria com esse nome neste portal.");
+            throw new ResourceAlreadyExistsException("Já existe uma categoria com o nome '" + nome + "' neste portal.");
         }
 
         Categoria categoria = new Categoria(nome, portal);
@@ -59,10 +61,10 @@ public class ChamadoConfigService {
     public Subtopico criarSubtopico(String nome, Integer categoriaId) {
 
         Categoria categoria = categoriaRepository.findById(categoriaId)
-                .orElseThrow(() -> new IllegalArgumentException("Categoria não encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Categoria não encontrada com o ID: " + categoriaId));
 
         if (subtopicoRepository.existsByCategoriaIdAndNome(categoriaId, nome)) {
-            throw new IllegalArgumentException("Já existe um subtópico com esse nome.");
+            throw new ResourceAlreadyExistsException("Já existe um subtópico com o nome '" + nome + "' nesta categoria.");
         }
 
         return subtopicoRepository.save(new Subtopico(nome, categoria));
@@ -72,7 +74,7 @@ public class ChamadoConfigService {
     public void deletarPortal(Long id) {
 
         if (!portalRepository.existsById(id)) {
-            throw new IllegalArgumentException("Portal não encontrado");
+            throw new ResourceNotFoundException("Portal não encontrado com o ID: " + id);
         }
 
         portalRepository.deleteById(id);
@@ -81,7 +83,7 @@ public class ChamadoConfigService {
     @Transactional
     public void deletarCategoria(Integer id) {
         if (!categoriaRepository.existsById(id)) {
-            throw new IllegalArgumentException("Categoria não encontrada");
+            throw new ResourceNotFoundException("Categoria não encontrada com o ID: " + id);
         }
         categoriaRepository.deleteById(id);
     }
@@ -89,7 +91,7 @@ public class ChamadoConfigService {
     @Transactional
     public void deletarSubtopico(Integer id) {
         if (!subtopicoRepository.existsById(id)) {
-            throw new IllegalArgumentException("Subtópico não encontrado");
+            throw new ResourceNotFoundException("Subtópico não encontrado com o ID: " + id);
         }
         subtopicoRepository.deleteById(id);
     }
