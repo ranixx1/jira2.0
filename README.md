@@ -1,4 +1,4 @@
-# Jira 2.0
+# Teassitura Jira
 
 Sistema de gerenciamento de chamados inspirado no Jira Service Management.
 
@@ -325,7 +325,7 @@ Time
 # Como executar
 
 ```bash
-git clone https://github.com/ranixx1/jira2.0.git
+git clone https://github.com/ranixx1/teassitura_jira.git
 
 cd jira2.0
 
