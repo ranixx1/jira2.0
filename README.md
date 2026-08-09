@@ -1,4 +1,4 @@
-# Teassitura Jira
+# Tessitura Jira
 
 Sistema de gerenciamento de chamados inspirado no Jira Service Management.
 
@@ -325,9 +325,9 @@ Time
 # Como executar
 
 ```bash
-git clone https://github.com/ranixx1/teassitura_jira.git
+git clone https://github.com/ranixx1/tessitura_jira.git
 
-cd jira2.0
+cd tessitura
 
 export DB_USER=root
 export DB_PASS=sua_senha
