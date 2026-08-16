@@ -22,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 public class ChamadoController {
 
     private final ChamadoService chamadoService;
+
     @PostMapping
     public ResponseEntity<ChamadoResponseDTO> criarChamado(
             @Valid @RequestBody ChamadoRequestDTO request,
@@ -32,6 +33,23 @@ public class ChamadoController {
 
         ChamadoResponseDTO dto = chamadoService.criarChamado(request, userId);
         return ResponseEntity.status(201).body(dto);
+    }
+
+    @GetMapping("/meus")
+    public ResponseEntity<List<ChamadoResponseDTO>> listarMeus(
+            Authentication authentication) {
+
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+
+        Long userId = jwt.getClaim("userId");
+
+        List<ChamadoResponseDTO> dtos = chamadoService
+                .listarChamadosPorUsuario(userId)
+                .stream()
+                .map(ChamadoResponseDTO::from)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(dtos);
     }
 
     @PostMapping("/{id}/comentarios")
