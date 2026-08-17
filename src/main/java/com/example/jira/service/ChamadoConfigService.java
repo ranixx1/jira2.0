@@ -26,8 +26,13 @@ public class ChamadoConfigService {
         return portalRepository.findAll();
     }
 
-    public List<Categoria> listarCategorias() {
-        return categoriaRepository.findAll();
+    public List<Categoria> listarCategorias(Long portalId) {
+        return categoriaRepository.findByPortal_Id(portalId);
+    }
+
+    public List<Subtopico> listarSubtopicos(Integer categoriaId) {
+
+        return subtopicoRepository.findByCategoria_Id(categoriaId);
     }
 
     @Transactional
@@ -64,7 +69,8 @@ public class ChamadoConfigService {
                 .orElseThrow(() -> new ResourceNotFoundException("Categoria não encontrada com o ID: " + categoriaId));
 
         if (subtopicoRepository.existsByCategoriaIdAndNome(categoriaId, nome)) {
-            throw new ResourceAlreadyExistsException("Já existe um subtópico com o nome '" + nome + "' nesta categoria.");
+            throw new ResourceAlreadyExistsException(
+                    "Já existe um subtópico com o nome '" + nome + "' nesta categoria.");
         }
 
         return subtopicoRepository.save(new Subtopico(nome, categoria));
