@@ -141,6 +141,11 @@ public class ChamadoService {
     public List<Chamado> listarChamadosPorPrioridade(Prioridade prioridade) {
         return chamadoRepository.findByPrioridade(prioridade);
     }
+    
+    public List<Chamado> listarChamadosPorUsuario(Long userId) {
+    return chamadoRepository.findByUserId(userId);
+}
+
     private Portal buscarPortal(Long portalId) {
 
         return portalRepository.findById(portalId)

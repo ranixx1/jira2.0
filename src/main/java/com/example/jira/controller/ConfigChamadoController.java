@@ -1,23 +1,29 @@
 package com.example.jira.controller;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import com.example.jira.model.Categoria;
 import com.example.jira.model.Portal;
 import com.example.jira.model.Subtopico;
 import com.example.jira.service.ChamadoConfigService;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
+
 @RestController
 @RequestMapping("/config/chamados")
 @RequiredArgsConstructor
 public class ConfigChamadoController {
 
     private final ChamadoConfigService configService;
+    
     @GetMapping("/portais")
     public ResponseEntity<List<Portal>> listarPortais() {
-        return ResponseEntity.ok(configService.listarPortaisDisponiveis());
+        return ResponseEntity.ok(
+                configService.listarPortaisDisponiveis()
+        );
     }
 
     @PostMapping("/portais")
@@ -27,15 +33,34 @@ public class ConfigChamadoController {
 
         try {
             Portal portal = configService.criarPortal(nome, descricao);
-            return ResponseEntity.status(HttpStatus.CREATED).body(portal);
+
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(portal);
+
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity
+                    .badRequest()
+                    .body(e.getMessage());
         }
     }
 
-    @GetMapping("/categorias")
-    public ResponseEntity<List<Categoria>> listarCategorias() {
-        return ResponseEntity.ok(configService.listarCategorias());
+    @DeleteMapping("/portais/{id}")
+    public ResponseEntity<Void> deletarPortal(
+            @PathVariable Long id) {
+
+        configService.deletarPortal(id);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/portais/{portalId}/categorias")
+    public ResponseEntity<List<Categoria>> listarCategoriasPorPortal(
+            @PathVariable Long portalId) {
+
+        return ResponseEntity.ok(
+                configService.listarCategorias(portalId)
+        );
     }
 
     @PostMapping("/categorias")
@@ -44,19 +69,35 @@ public class ConfigChamadoController {
             @RequestParam Long portalId) {
 
         try {
-            Categoria categoria = configService.criarCategoria(nome, portalId);
-            return ResponseEntity.status(HttpStatus.CREATED).body(categoria);
+            Categoria categoria =
+                    configService.criarCategoria(nome, portalId);
+
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(categoria);
+
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity
+                    .badRequest()
+                    .body(e.getMessage());
         }
     }
 
     @DeleteMapping("/categorias/{id}")
-    public ResponseEntity<Void> deletarCategoria(@PathVariable Integer id) {
+    public ResponseEntity<Void> deletarCategoria(
+            @PathVariable Integer id) {
 
         configService.deletarCategoria(id);
 
         return ResponseEntity.noContent().build();
+    }
+    @GetMapping("/categorias/{categoriaId}/subtopicos")
+    public ResponseEntity<List<Subtopico>> listarSubtopicosPorCategoria(
+            @PathVariable Integer categoriaId) {
+
+        return ResponseEntity.ok(
+                configService.listarSubtopicos(categoriaId)
+        );
     }
 
     @PostMapping("/subtopicos")
@@ -65,15 +106,23 @@ public class ConfigChamadoController {
             @RequestParam Integer categoriaId) {
 
         try {
-            Subtopico subtopico = configService.criarSubtopico(nome, categoriaId);
-            return ResponseEntity.status(HttpStatus.CREATED).body(subtopico);
+            Subtopico subtopico =
+                    configService.criarSubtopico(nome, categoriaId);
+
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(subtopico);
+
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity
+                    .badRequest()
+                    .body(e.getMessage());
         }
     }
 
     @DeleteMapping("/subtopicos/{id}")
-    public ResponseEntity<Void> deletarSubtopico(@PathVariable Integer id) {
+    public ResponseEntity<Void> deletarSubtopico(
+            @PathVariable Integer id) {
 
         configService.deletarSubtopico(id);
 

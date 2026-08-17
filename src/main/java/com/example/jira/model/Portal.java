@@ -11,6 +11,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,7 +23,6 @@ import lombok.Setter;
 @Table(name = "portal")
 @NoArgsConstructor
 
-
 public class Portal {
 
     @Id
@@ -31,7 +31,6 @@ public class Portal {
 
     @Column(nullable = false, unique = true)
     private String codigo;
-    
 
     @Column(nullable = false, unique = true)
     private String nome;
@@ -44,11 +43,14 @@ public class Portal {
     @OneToMany(mappedBy = "portal", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Categoria> categorias = new ArrayList<>();
 
-    public Portal(String nome, String descricao){
+    public Portal(String nome, String descricao) {
         this.nome = nome;
         this.descricao = descricao;
     }
 
-
+    @PrePersist
+    public void prePersist() {
+        this.criadoEm = LocalDateTime.now();
+    }
 
 }
