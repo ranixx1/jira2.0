@@ -54,18 +54,20 @@ public class ChamadoController {
 
     @PostMapping("/{id}/comentarios")
     public ResponseEntity<ChamadoResponseDTO> comentar(
-            @PathVariable Integer id,
-            @Valid @RequestBody ComentarioRequestDTO req,
-            Authentication authentication) {
+        @PathVariable Integer id,
+        @Valid @RequestBody ComentarioRequestDTO req,
+        Authentication authentication) {
 
-        Jwt jwt = (Jwt) authentication.getPrincipal();
-        Long userId = jwt.getClaim("userId");
-        String username = jwt.getClaim("username");
+    Jwt jwt = (Jwt) authentication.getPrincipal();
+    Long userId = jwt.getClaim("userId");
+    
 
-        return ResponseEntity.ok(
-                ChamadoResponseDTO.from(
-                        chamadoService.adicionarComentario(id, req.mensagem(), userId, username)));
-    }
+    String username = jwt.getSubject(); 
+
+    return ResponseEntity.ok(
+            ChamadoResponseDTO.from(
+                    chamadoService.adicionarComentario(id, req.mensagem(), userId, username)));
+}
 
     @GetMapping("/id/{id}")
     public ResponseEntity<ChamadoResponseDTO> buscarPorId(@PathVariable Integer id) {

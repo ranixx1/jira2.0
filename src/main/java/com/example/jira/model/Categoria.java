@@ -1,6 +1,7 @@
 package com.example.jira.model;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
@@ -25,6 +26,7 @@ public class Categoria {
     @JoinColumn(name = "time_id")
     private Time time;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "portal_id", nullable = false)
     private Portal portal;

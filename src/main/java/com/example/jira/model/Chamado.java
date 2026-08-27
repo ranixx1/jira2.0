@@ -39,7 +39,7 @@ public class Chamado {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String codigo;
 
     @ManyToOne(fetch = FetchType.LAZY)
