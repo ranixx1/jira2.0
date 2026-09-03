@@ -6,6 +6,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+
+import com.example.jira.dto.AlterarStatusRequestDTO;
 import com.example.jira.dto.ChamadoRequestDTO;
 import com.example.jira.dto.ChamadoResponseDTO;
 import com.example.jira.dto.ComentarioRequestDTO;
@@ -54,20 +56,19 @@ public class ChamadoController {
 
     @PostMapping("/{id}/comentarios")
     public ResponseEntity<ChamadoResponseDTO> comentar(
-        @PathVariable Integer id,
-        @Valid @RequestBody ComentarioRequestDTO req,
-        Authentication authentication) {
+            @PathVariable Integer id,
+            @Valid @RequestBody ComentarioRequestDTO req,
+            Authentication authentication) {
 
-    Jwt jwt = (Jwt) authentication.getPrincipal();
-    Long userId = jwt.getClaim("userId");
-    
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        Long userId = jwt.getClaim("userId");
 
-    String username = jwt.getSubject(); 
+        String username = jwt.getSubject();
 
-    return ResponseEntity.ok(
-            ChamadoResponseDTO.from(
-                    chamadoService.adicionarComentario(id, req.mensagem(), userId, username)));
-}
+        return ResponseEntity.ok(
+                ChamadoResponseDTO.from(
+                        chamadoService.adicionarComentario(id, req.mensagem(), userId, username)));
+    }
 
     @GetMapping("/id/{id}")
     public ResponseEntity<ChamadoResponseDTO> buscarPorId(@PathVariable Integer id) {
@@ -76,11 +77,21 @@ public class ChamadoController {
     }
 
     @PutMapping("/{id}/status")
-    public ResponseEntity<Chamado> alterarStatus(
+    public ResponseEntity<ChamadoResponseDTO> alterarStatus(
             @PathVariable Integer id,
-            @RequestBody Status novoStatus) {
+            @Valid @RequestBody AlterarStatusRequestDTO request,
+            Authentication authentication) {
+
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        Long userId = jwt.getClaim("userId");
+
+        Chamado chamado = chamadoService.alterarStatus(
+                id,
+                request.status(),
+                userId);
+
         return ResponseEntity.ok(
-                chamadoService.alterarStatusChamado(id, novoStatus));
+                ChamadoResponseDTO.from(chamado));
     }
 
     @GetMapping

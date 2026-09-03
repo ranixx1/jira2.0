@@ -82,6 +82,8 @@ public class Chamado {
     @Enumerated(EnumType.STRING)
     private Escopo escopo;
 
+    private Long atualizadoPorUserId;
+
     @OneToMany(mappedBy = "chamado", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = false)
     private List<Comentario> comentarios = new ArrayList<>();
 

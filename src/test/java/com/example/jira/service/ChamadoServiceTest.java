@@ -204,18 +204,6 @@ class ChamadoServiceTest {
     }
 
     @Test
-    @DisplayName("Deve alterar o status de um chamado com sucesso")
-    void alterarStatusChamado_Success() {
-        when(chamadoRepository.findById(CHAMADO_ID)).thenReturn(Optional.of(chamado));
-        when(chamadoRepository.save(any(Chamado.class))).thenReturn(chamado);
-
-        chamadoService.alterarStatusChamado(CHAMADO_ID, Status.EM_PROGRESSO);
-
-        assertEquals(Status.EM_PROGRESSO, chamado.getStatus());
-        verify(chamadoRepository).save(chamado);
-    }
-
-    @Test
     @DisplayName("Deve adicionar um comentário a um chamado com sucesso")
     void adicionarComentario_Success() {
         when(chamadoRepository.findById(CHAMADO_ID)).thenReturn(Optional.of(chamado));

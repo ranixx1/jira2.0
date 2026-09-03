@@ -1,5 +1,6 @@
 package com.example.jira.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -81,8 +82,7 @@ public class ChamadoService {
 
     public Chamado buscarChamadoPorId(Integer id) {
         return chamadoRepository.findById(id)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("Chamado não encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Chamado não encontrado"));
     }
 
     @Transactional
@@ -96,11 +96,16 @@ public class ChamadoService {
     }
 
     @Transactional
-    public Chamado alterarStatusChamado(Integer id, Status novoStatus) {
+    public Chamado alterarStatus(
+            Integer id,
+            Status novoStatus,
+            Long userId) {
 
         Chamado chamado = buscarChamadoPorId(id);
 
         chamado.alterarStatus(novoStatus);
+        chamado.setAtualizadoPorUserId(userId);
+        chamado.setHorario_atualizacao(LocalDateTime.now());
 
         return chamadoRepository.save(chamado);
     }
@@ -141,23 +146,21 @@ public class ChamadoService {
     public List<Chamado> listarChamadosPorPrioridade(Prioridade prioridade) {
         return chamadoRepository.findByPrioridade(prioridade);
     }
-    
+
     public List<Chamado> listarChamadosPorUsuario(Long userId) {
-    return chamadoRepository.findByUserId(userId);
-}
+        return chamadoRepository.findByUserId(userId);
+    }
 
     private Portal buscarPortal(Long portalId) {
 
         return portalRepository.findById(portalId)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("Portal não encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Portal não encontrado"));
     }
 
     private Categoria buscarCategoria(Integer categoriaId) {
 
         return categoriaRepository.findById(categoriaId)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("Categoria não encontrada"));
+                .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada"));
     }
 
     private Subtopico buscarSubtopico(Integer subtopicoId) {
@@ -167,8 +170,7 @@ public class ChamadoService {
         }
 
         return subtopicoRepository.findById(subtopicoId)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("Subtópico não encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Subtópico não encontrado"));
     }
 
     private void validarCategoriaDoPortal(
