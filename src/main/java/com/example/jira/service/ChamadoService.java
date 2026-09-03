@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.jira.dto.ChamadoRequestDTO;
 import com.example.jira.dto.ChamadoResponseDTO;
+import com.example.jira.enums.Escopo;
 import com.example.jira.enums.Prioridade;
 import com.example.jira.enums.Status;
 import com.example.jira.model.Categoria;
@@ -69,10 +70,10 @@ public class ChamadoService {
         chamado.setUserId(userId);
         chamado.setOutroSubtopico(req.getOutroSubtopico());
 
+        // precisa persistir uma vez para existir um ID a compor o código
         chamado = chamadoRepository.save(chamado);
 
-        chamado.setCodigo(
-                portal.getCodigo() + "-" + chamado.getId());
+        chamado.gerarCodigo();
 
         chamado = chamadoRepository.save(chamado);
 
@@ -130,21 +131,43 @@ public class ChamadoService {
         return chamadoRepository.save(chamado);
     }
 
-    public List<Chamado> listarChamados() {
-        return chamadoRepository.findAll();
+    public List<Chamado> listarChamados(Long userId) {
+        return chamadoRepository.findAllComDetalhes().stream()
+                .filter(c -> podeVisualizar(c, userId))
+                .toList();
     }
 
-    public List<Chamado> listarChamadoPorStatus(Status status) {
-        return chamadoRepository.findByStatus(status);
+    public List<Chamado> listarChamadoPorStatus(Status status, Long userId) {
+        return chamadoRepository.findByStatusComDetalhes(status).stream()
+                .filter(c -> podeVisualizar(c, userId))
+                .toList();
     }
 
-    public List<Chamado> listarChamadosPorPrioridade(Prioridade prioridade) {
-        return chamadoRepository.findByPrioridade(prioridade);
+    public List<Chamado> listarChamadosPorPrioridade(Prioridade prioridade, Long userId) {
+        return chamadoRepository.findByPrioridade(prioridade).stream()
+                .filter(c -> podeVisualizar(c, userId))
+                .toList();
     }
-    
+
     public List<Chamado> listarChamadosPorUsuario(Long userId) {
-    return chamadoRepository.findByUserId(userId);
-}
+        return chamadoRepository.findByUserId(userId);
+    }
+
+    public Chamado buscarChamadoVisivel(Integer id, Long userId) {
+        Chamado chamado = buscarChamadoPorId(id);
+
+        if (!podeVisualizar(chamado, userId)) {
+            // 404 em vez de 403: não confirma pro solicitante que o chamado existe
+            throw new EntityNotFoundException("Chamado não encontrado");
+        }
+
+        return chamado;
+    }
+
+    private boolean podeVisualizar(Chamado chamado, Long userId) {
+        return chamado.getEscopo() == Escopo.TODOS
+                || chamado.getUserId().equals(userId);
+    }
 
     private Portal buscarPortal(Long portalId) {
 

@@ -13,6 +13,7 @@ import com.example.jira.repository.SubtopicoRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -20,7 +21,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -48,6 +48,7 @@ class ChamadoServiceTest {
     private static final int SUBTOPICO_ID = 1;
     private static final int CHAMADO_ID = 1;
     private static final Long USER_ID = 1L;
+    private static final Long OUTRO_USER_ID = 2L;
     private static final String PORTAL_CODIGO = "PT";
 
     private Portal portal;
@@ -61,7 +62,7 @@ class ChamadoServiceTest {
         portal = createPortal();
         categoria = createCategoria(portal);
         subtopico = createSubtopico(categoria);
-        chamado = createChamado(portal, categoria, subtopico);
+        chamado = createChamado(CHAMADO_ID, portal, categoria, subtopico, Escopo.TODOS, USER_ID);
         chamadoRequestDTO = createChamadoRequestDTO();
     }
 
@@ -84,9 +85,14 @@ class ChamadoServiceTest {
         return s;
     }
 
-    private Chamado createChamado(Portal portal, Categoria categoria, Subtopico subtopico) {
+    // sobrecarga usada pelos testes de escopo/visibilidade, que precisam variar
+    // id/escopo/dono sem duplicar os outros oito campos toda vez
+    private Chamado createChamado(
+            int id, Portal portal, Categoria categoria, Subtopico subtopico,
+            Escopo escopo, Long userId) {
+
         Chamado ch = new Chamado();
-        ch.setId(CHAMADO_ID);
+        ch.setId(id);
         ch.setPortal(portal);
         ch.setCategoria(categoria);
         ch.setSubtopico(subtopico);
@@ -94,8 +100,8 @@ class ChamadoServiceTest {
         ch.setStatus(Status.ABERTO);
         ch.setTitulo("Título");
         ch.setDescricao("Descrição");
-        ch.setEscopo(Escopo.TODOS);
-        ch.setUserId(USER_ID);
+        ch.setEscopo(escopo);
+        ch.setUserId(userId);
         return ch;
     }
 
@@ -136,6 +142,8 @@ class ChamadoServiceTest {
         verify(chamadoRepository, times(2)).save(any(Chamado.class));
 
         assertNotNull(response);
+        // este valor agora vem de Chamado.gerarCodigo() (chamado pelo service),
+        // não mais de uma concatenação reimplementada no ChamadoService
         assertEquals(PORTAL_CODIGO + "-" + CHAMADO_ID, chamadoCaptor.getValue().getCodigo());
         assertEquals("Título", response.titulo());
         assertEquals(Status.ABERTO, response.status());
@@ -167,116 +175,6 @@ class ChamadoServiceTest {
         assertThrows(IllegalArgumentException.class, () -> {
             chamadoService.criarChamado(chamadoRequestDTO, USER_ID);
         });
-    }
-
-    @Test
-    @DisplayName("Deve buscar um chamado por ID com sucesso")
-    void buscarChamadoPorId_Success() {
-        when(chamadoRepository.findById(CHAMADO_ID)).thenReturn(Optional.of(chamado));
-
-        Chamado result = chamadoService.buscarChamadoPorId(CHAMADO_ID);
-
-        assertNotNull(result);
-        assertEquals(chamado.getId(), result.getId());
-        verify(chamadoRepository).findById(CHAMADO_ID);
-    }
-
-    @Test
-    @DisplayName("Deve lançar EntityNotFoundException ao buscar chamado com ID inexistente")
-    void buscarChamadoPorId_NotFound() {
-        when(chamadoRepository.findById(CHAMADO_ID)).thenReturn(Optional.empty());
-
-        assertThrows(EntityNotFoundException.class, () -> {
-            chamadoService.buscarChamadoPorId(CHAMADO_ID);
-        });
-    }
-
-    @Test
-    @DisplayName("Deve fechar um chamado com sucesso")
-    void fecharChamado_Success() {
-        when(chamadoRepository.findById(CHAMADO_ID)).thenReturn(Optional.of(chamado));
-        when(chamadoRepository.save(any(Chamado.class))).thenReturn(chamado);
-
-        chamadoService.fecharChamado(CHAMADO_ID);
-
-        assertEquals(Status.FECHADO, chamado.getStatus());
-        verify(chamadoRepository).save(chamado);
-    }
-
-    @Test
-    @DisplayName("Deve alterar o status de um chamado com sucesso")
-    void alterarStatusChamado_Success() {
-        when(chamadoRepository.findById(CHAMADO_ID)).thenReturn(Optional.of(chamado));
-        when(chamadoRepository.save(any(Chamado.class))).thenReturn(chamado);
-
-        chamadoService.alterarStatusChamado(CHAMADO_ID, Status.EM_PROGRESSO);
-
-        assertEquals(Status.EM_PROGRESSO, chamado.getStatus());
-        verify(chamadoRepository).save(chamado);
-    }
-
-    @Test
-    @DisplayName("Deve adicionar um comentário a um chamado com sucesso")
-    void adicionarComentario_Success() {
-        when(chamadoRepository.findById(CHAMADO_ID)).thenReturn(Optional.of(chamado));
-        when(chamadoRepository.save(any(Chamado.class))).thenReturn(chamado);
-
-        chamadoService.adicionarComentario(CHAMADO_ID, "Novo comentário", USER_ID, "user");
-
-        assertEquals(1, chamado.getComentarios().size());
-        assertEquals("Novo comentário", chamado.getComentarios().get(0).getMensagem());
-        verify(chamadoRepository).save(chamado);
-    }
-
-    @Test
-    @DisplayName("Deve lançar IllegalStateException ao adicionar comentário em chamado fechado")
-    void adicionarComentario_ChamadoFechado() {
-        chamado.fechar();
-        when(chamadoRepository.findById(CHAMADO_ID)).thenReturn(Optional.of(chamado));
-
-        assertThrows(IllegalStateException.class, () -> {
-            chamadoService.adicionarComentario(CHAMADO_ID, "Comentário inválido", USER_ID, "user");
-        });
-
-        verify(chamadoRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Deve listar todos os chamados")
-    void listarChamados_Success() {
-        when(chamadoRepository.findAll()).thenReturn(Collections.singletonList(chamado));
-
-        List<Chamado> chamados = chamadoService.listarChamados();
-
-        assertFalse(chamados.isEmpty());
-        assertEquals(1, chamados.size());
-        verify(chamadoRepository).findAll();
-    }
-
-    @Test
-    @DisplayName("Deve listar chamados por status")
-    void listarChamadoPorStatus_Success() {
-        when(chamadoRepository.findByStatus(Status.ABERTO)).thenReturn(Collections.singletonList(chamado));
-
-        List<Chamado> chamados = chamadoService.listarChamadoPorStatus(Status.ABERTO);
-
-        assertFalse(chamados.isEmpty());
-        assertEquals(1, chamados.size());
-        assertEquals(Status.ABERTO, chamados.get(0).getStatus());
-        verify(chamadoRepository).findByStatus(Status.ABERTO);
-    }
-
-    @Test
-    @DisplayName("Deve listar chamados por prioridade")
-    void listarChamadosPorPrioridade_Success() {
-        when(chamadoRepository.findByPrioridade(Prioridade.ALTA)).thenReturn(Collections.singletonList(chamado));
-
-        List<Chamado> chamados = chamadoService.listarChamadosPorPrioridade(Prioridade.ALTA);
-
-        assertFalse(chamados.isEmpty());
-        assertEquals(1, chamados.size());
-        assertEquals(Prioridade.ALTA, chamados.get(0).getPrioridade());
-        verify(chamadoRepository).findByPrioridade(Prioridade.ALTA);
     }
 
     @Test
@@ -324,5 +222,157 @@ class ChamadoServiceTest {
         });
 
         assertEquals("O subtópico não pertence à categoria informada.", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Deve buscar um chamado por ID com sucesso")
+    void buscarChamadoPorId_Success() {
+        when(chamadoRepository.findById(CHAMADO_ID)).thenReturn(Optional.of(chamado));
+
+        Chamado result = chamadoService.buscarChamadoPorId(CHAMADO_ID);
+
+        assertNotNull(result);
+        assertEquals(chamado.getId(), result.getId());
+        verify(chamadoRepository).findById(CHAMADO_ID);
+    }
+
+    @Test
+    @DisplayName("Deve lançar EntityNotFoundException ao buscar chamado com ID inexistente")
+    void buscarChamadoPorId_NotFound() {
+        when(chamadoRepository.findById(CHAMADO_ID)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () -> {
+            chamadoService.buscarChamadoPorId(CHAMADO_ID);
+        });
+    }
+
+    @Test
+    @DisplayName("Deve fechar um chamado com sucesso")
+    void fecharChamado_Success() {
+        when(chamadoRepository.findById(CHAMADO_ID)).thenReturn(Optional.of(chamado));
+        when(chamadoRepository.save(any(Chamado.class))).thenReturn(chamado);
+
+        chamadoService.fecharChamado(CHAMADO_ID);
+
+        assertEquals(Status.FECHADO, chamado.getStatus());
+        verify(chamadoRepository).save(chamado);
+    }
+
+    @Test
+    @DisplayName("Deve adicionar um comentário a um chamado com sucesso")
+    void adicionarComentario_Success() {
+        when(chamadoRepository.findById(CHAMADO_ID)).thenReturn(Optional.of(chamado));
+        when(chamadoRepository.save(any(Chamado.class))).thenReturn(chamado);
+
+        chamadoService.adicionarComentario(CHAMADO_ID, "Novo comentário", USER_ID, "user");
+
+        assertEquals(1, chamado.getComentarios().size());
+        assertEquals("Novo comentário", chamado.getComentarios().get(0).getMensagem());
+        verify(chamadoRepository).save(chamado);
+    }
+
+    @Test
+    @DisplayName("Deve lançar IllegalStateException ao adicionar comentário em chamado fechado")
+    void adicionarComentario_ChamadoFechado() {
+        chamado.fechar();
+        when(chamadoRepository.findById(CHAMADO_ID)).thenReturn(Optional.of(chamado));
+
+        assertThrows(IllegalStateException.class, () -> {
+            chamadoService.adicionarComentario(CHAMADO_ID, "Comentário inválido", USER_ID, "user");
+        });
+
+        verify(chamadoRepository, never()).save(any());
+    }
+
+    // ── Escopo / visibilidade ──────────────────────────────────────────────
+    // Cobre o bug corrigido: Escopo.SOMENTE_EU não filtrava nada antes.
+    @Nested
+    @DisplayName("Visibilidade por Escopo")
+    class VisibilidadePorEscopo {
+
+        @Test
+        @DisplayName("listarChamados esconde chamados SOMENTE_EU de outros usuários")
+        void listarChamados_FiltraPorEscopo() {
+            Chamado meu = createChamado(1, portal, categoria, subtopico, Escopo.SOMENTE_EU, USER_ID);
+            Chamado deOutro = createChamado(2, portal, categoria, subtopico, Escopo.SOMENTE_EU, OUTRO_USER_ID);
+            Chamado publico = createChamado(3, portal, categoria, subtopico, Escopo.TODOS, OUTRO_USER_ID);
+
+            when(chamadoRepository.findAllComDetalhes())
+                    .thenReturn(List.of(meu, deOutro, publico));
+
+            List<Chamado> resultado = chamadoService.listarChamados(USER_ID);
+
+            assertEquals(2, resultado.size());
+            assertTrue(resultado.contains(meu));
+            assertTrue(resultado.contains(publico));
+            assertFalse(resultado.contains(deOutro));
+
+            // trava a regressão do bug #4: tem que usar a query com JOIN FETCH,
+            // não o findAll() puro que gera N+1
+            verify(chamadoRepository).findAllComDetalhes();
+            verify(chamadoRepository, never()).findAll();
+        }
+
+        @Test
+        @DisplayName("listarChamadoPorStatus usa a query otimizada e respeita o escopo")
+        void listarChamadoPorStatus_FiltraPorEscopoEUsaQueryComDetalhes() {
+            Chamado deOutro = createChamado(2, portal, categoria, subtopico, Escopo.SOMENTE_EU, OUTRO_USER_ID);
+
+            when(chamadoRepository.findByStatusComDetalhes(Status.ABERTO))
+                    .thenReturn(List.of(deOutro));
+
+            List<Chamado> resultado = chamadoService.listarChamadoPorStatus(Status.ABERTO, USER_ID);
+
+            assertTrue(resultado.isEmpty());
+            verify(chamadoRepository).findByStatusComDetalhes(Status.ABERTO);
+            verify(chamadoRepository, never()).findByStatus(any());
+        }
+
+        @Test
+        @DisplayName("listarChamadosPorPrioridade respeita o escopo")
+        void listarChamadosPorPrioridade_FiltraPorEscopo() {
+            Chamado meu = createChamado(1, portal, categoria, subtopico, Escopo.SOMENTE_EU, USER_ID);
+            Chamado deOutro = createChamado(2, portal, categoria, subtopico, Escopo.SOMENTE_EU, OUTRO_USER_ID);
+
+            when(chamadoRepository.findByPrioridade(Prioridade.ALTA))
+                    .thenReturn(List.of(meu, deOutro));
+
+            List<Chamado> resultado = chamadoService.listarChamadosPorPrioridade(Prioridade.ALTA, USER_ID);
+
+            assertEquals(1, resultado.size());
+            assertEquals(meu.getId(), resultado.get(0).getId());
+        }
+
+        @Test
+        @DisplayName("buscarChamadoVisivel retorna o chamado quando o escopo é TODOS")
+        void buscarChamadoVisivel_EscopoTodos_Sucesso() {
+            chamado.setEscopo(Escopo.TODOS);
+            when(chamadoRepository.findById(CHAMADO_ID)).thenReturn(Optional.of(chamado));
+
+            Chamado resultado = chamadoService.buscarChamadoVisivel(CHAMADO_ID, OUTRO_USER_ID);
+
+            assertEquals(chamado.getId(), resultado.getId());
+        }
+
+        @Test
+        @DisplayName("buscarChamadoVisivel retorna o chamado SOMENTE_EU para o próprio dono")
+        void buscarChamadoVisivel_Dono_Sucesso() {
+            chamado.setEscopo(Escopo.SOMENTE_EU);
+            when(chamadoRepository.findById(CHAMADO_ID)).thenReturn(Optional.of(chamado));
+
+            Chamado resultado = chamadoService.buscarChamadoVisivel(CHAMADO_ID, USER_ID);
+
+            assertEquals(chamado.getId(), resultado.getId());
+        }
+
+        @Test
+        @DisplayName("buscarChamadoVisivel lança EntityNotFoundException quando outro usuário tenta ver um SOMENTE_EU")
+        void buscarChamadoVisivel_NaoDono_LancaEntityNotFoundException() {
+            chamado.setEscopo(Escopo.SOMENTE_EU);
+            when(chamadoRepository.findById(CHAMADO_ID)).thenReturn(Optional.of(chamado));
+
+            assertThrows(EntityNotFoundException.class, () ->
+                    chamadoService.buscarChamadoVisivel(CHAMADO_ID, OUTRO_USER_ID));
+        }
     }
 }

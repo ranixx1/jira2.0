@@ -68,8 +68,11 @@ public class ChamadoController {
     }
 
     @GetMapping("/id/{id}")
-    public ResponseEntity<ChamadoResponseDTO> buscarPorId(@PathVariable Integer id) {
-        Chamado chamado = chamadoService.buscarChamadoPorId(id);
+    public ResponseEntity<ChamadoResponseDTO> buscarPorId(
+            @PathVariable Integer id,
+            Authentication authentication) {
+
+        Chamado chamado = chamadoService.buscarChamadoVisivel(id, extrairUserId(authentication));
         return ResponseEntity.ok(ChamadoResponseDTO.from(chamado));
     }
 
@@ -82,8 +85,8 @@ public class ChamadoController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ChamadoResponseDTO>> listarTodos() {
-        List<ChamadoResponseDTO> dtos = chamadoService.listarChamados()
+    public ResponseEntity<List<ChamadoResponseDTO>> listarTodos(Authentication authentication) {
+        List<ChamadoResponseDTO> dtos = chamadoService.listarChamados(extrairUserId(authentication))
                 .stream()
                 .map(ChamadoResponseDTO::from)
                 .collect(Collectors.toList());
@@ -91,8 +94,12 @@ public class ChamadoController {
     }
 
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<ChamadoResponseDTO>> listarPorStatus(@PathVariable Status status) {
-        List<ChamadoResponseDTO> dtos = chamadoService.listarChamadoPorStatus(status)
+    public ResponseEntity<List<ChamadoResponseDTO>> listarPorStatus(
+            @PathVariable Status status,
+            Authentication authentication) {
+
+        List<ChamadoResponseDTO> dtos = chamadoService
+                .listarChamadoPorStatus(status, extrairUserId(authentication))
                 .stream()
                 .map(ChamadoResponseDTO::from)
                 .collect(Collectors.toList());
@@ -100,11 +107,20 @@ public class ChamadoController {
     }
 
     @GetMapping("/prioridade/{prioridade}")
-    public ResponseEntity<List<ChamadoResponseDTO>> listarPorPrioridade(@PathVariable Prioridade prioridade) {
-        List<ChamadoResponseDTO> dtos = chamadoService.listarChamadosPorPrioridade(prioridade)
+    public ResponseEntity<List<ChamadoResponseDTO>> listarPorPrioridade(
+            @PathVariable Prioridade prioridade,
+            Authentication authentication) {
+
+        List<ChamadoResponseDTO> dtos = chamadoService
+                .listarChamadosPorPrioridade(prioridade, extrairUserId(authentication))
                 .stream()
                 .map(ChamadoResponseDTO::from)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(dtos);
+    }
+
+    private Long extrairUserId(Authentication authentication) {
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        return jwt.getClaim("userId");
     }
 }

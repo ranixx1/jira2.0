@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.validation.constraints.NotNull;
 import com.example.jira.enums.Escopo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -39,7 +41,7 @@ public class Chamado {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String codigo;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -48,6 +50,7 @@ public class Chamado {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "categoria_id")
+    @JsonIgnore
     private Categoria categoria;
 
     @ManyToOne
@@ -82,8 +85,13 @@ public class Chamado {
     @Enumerated(EnumType.STRING)
     private Escopo escopo;
 
+    private Long atualizadoPorUserId;
+
     @OneToMany(mappedBy = "chamado", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = false)
     private List<Comentario> comentarios = new ArrayList<>();
+
+    @OneToMany(mappedBy = "chamado", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = false)
+    private List<ChamadoHistorico> historico = new ArrayList<>();
 
     public Chamado(
             Portal portal,
@@ -106,8 +114,8 @@ public class Chamado {
     }
 
     public void gerarCodigo() {
-    this.codigo = portal.getCodigo() + "-" + id;
-}
+        this.codigo = portal.getCodigo() + "-" + id;
+    }
 
     public void adicionarComentario(Comentario comentario) {
         comentario.setChamado(this);
@@ -126,6 +134,11 @@ public class Chamado {
 
     public void alterarStatus(Status novoStatus) {
         this.status = novoStatus;
+    }
+
+    public void adicionarHistorico(ChamadoHistorico evento) {
+        evento.setChamado(this);
+        this.historico.add(evento);
     }
 
     @PrePersist
