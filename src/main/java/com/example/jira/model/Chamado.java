@@ -87,6 +87,9 @@ public class Chamado {
     @OneToMany(mappedBy = "chamado", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = false)
     private List<Comentario> comentarios = new ArrayList<>();
 
+    @OneToMany(mappedBy = "chamado", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = false)
+    private List<ChamadoHistorico> historico = new ArrayList<>();
+
     public Chamado(
             Portal portal,
             Categoria categoria,
@@ -108,8 +111,8 @@ public class Chamado {
     }
 
     public void gerarCodigo() {
-    this.codigo = portal.getCodigo() + "-" + id;
-}
+        this.codigo = portal.getCodigo() + "-" + id;
+    }
 
     public void adicionarComentario(Comentario comentario) {
         comentario.setChamado(this);
@@ -128,6 +131,11 @@ public class Chamado {
 
     public void alterarStatus(Status novoStatus) {
         this.status = novoStatus;
+    }
+
+    public void adicionarHistorico(ChamadoHistorico evento) {
+        evento.setChamado(this);
+        this.historico.add(evento);
     }
 
     @PrePersist
