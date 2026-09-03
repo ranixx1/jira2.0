@@ -6,8 +6,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
-
-import com.example.jira.dto.AlterarStatusRequestDTO;
 import com.example.jira.dto.ChamadoRequestDTO;
 import com.example.jira.dto.ChamadoResponseDTO;
 import com.example.jira.dto.ComentarioRequestDTO;
@@ -62,8 +60,7 @@ public class ChamadoController {
 
         Jwt jwt = (Jwt) authentication.getPrincipal();
         Long userId = jwt.getClaim("userId");
-
-        String username = jwt.getSubject();
+        String username = jwt.getClaim("username");
 
         return ResponseEntity.ok(
                 ChamadoResponseDTO.from(
@@ -71,32 +68,25 @@ public class ChamadoController {
     }
 
     @GetMapping("/id/{id}")
-    public ResponseEntity<ChamadoResponseDTO> buscarPorId(@PathVariable Integer id) {
-        Chamado chamado = chamadoService.buscarChamadoPorId(id);
+    public ResponseEntity<ChamadoResponseDTO> buscarPorId(
+            @PathVariable Integer id,
+            Authentication authentication) {
+
+        Chamado chamado = chamadoService.buscarChamadoVisivel(id, extrairUserId(authentication));
         return ResponseEntity.ok(ChamadoResponseDTO.from(chamado));
     }
 
     @PutMapping("/{id}/status")
-    public ResponseEntity<ChamadoResponseDTO> alterarStatus(
+    public ResponseEntity<Chamado> alterarStatus(
             @PathVariable Integer id,
-            @Valid @RequestBody AlterarStatusRequestDTO request,
-            Authentication authentication) {
-
-        Jwt jwt = (Jwt) authentication.getPrincipal();
-        Long userId = jwt.getClaim("userId");
-
-        Chamado chamado = chamadoService.alterarStatus(
-                id,
-                request.status(),
-                userId);
-
+            @RequestBody Status novoStatus) {
         return ResponseEntity.ok(
-                ChamadoResponseDTO.from(chamado));
+                chamadoService.alterarStatusChamado(id, novoStatus));
     }
 
     @GetMapping
-    public ResponseEntity<List<ChamadoResponseDTO>> listarTodos() {
-        List<ChamadoResponseDTO> dtos = chamadoService.listarChamados()
+    public ResponseEntity<List<ChamadoResponseDTO>> listarTodos(Authentication authentication) {
+        List<ChamadoResponseDTO> dtos = chamadoService.listarChamados(extrairUserId(authentication))
                 .stream()
                 .map(ChamadoResponseDTO::from)
                 .collect(Collectors.toList());
@@ -104,8 +94,12 @@ public class ChamadoController {
     }
 
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<ChamadoResponseDTO>> listarPorStatus(@PathVariable Status status) {
-        List<ChamadoResponseDTO> dtos = chamadoService.listarChamadoPorStatus(status)
+    public ResponseEntity<List<ChamadoResponseDTO>> listarPorStatus(
+            @PathVariable Status status,
+            Authentication authentication) {
+
+        List<ChamadoResponseDTO> dtos = chamadoService
+                .listarChamadoPorStatus(status, extrairUserId(authentication))
                 .stream()
                 .map(ChamadoResponseDTO::from)
                 .collect(Collectors.toList());
@@ -113,11 +107,20 @@ public class ChamadoController {
     }
 
     @GetMapping("/prioridade/{prioridade}")
-    public ResponseEntity<List<ChamadoResponseDTO>> listarPorPrioridade(@PathVariable Prioridade prioridade) {
-        List<ChamadoResponseDTO> dtos = chamadoService.listarChamadosPorPrioridade(prioridade)
+    public ResponseEntity<List<ChamadoResponseDTO>> listarPorPrioridade(
+            @PathVariable Prioridade prioridade,
+            Authentication authentication) {
+
+        List<ChamadoResponseDTO> dtos = chamadoService
+                .listarChamadosPorPrioridade(prioridade, extrairUserId(authentication))
                 .stream()
                 .map(ChamadoResponseDTO::from)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(dtos);
+    }
+
+    private Long extrairUserId(Authentication authentication) {
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        return jwt.getClaim("userId");
     }
 }

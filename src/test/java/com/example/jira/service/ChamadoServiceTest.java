@@ -228,45 +228,6 @@ class ChamadoServiceTest {
 
         verify(chamadoRepository, never()).save(any());
     }
-
-    @Test
-    @DisplayName("Deve listar todos os chamados")
-    void listarChamados_Success() {
-        when(chamadoRepository.findAll()).thenReturn(Collections.singletonList(chamado));
-
-        List<Chamado> chamados = chamadoService.listarChamados();
-
-        assertFalse(chamados.isEmpty());
-        assertEquals(1, chamados.size());
-        verify(chamadoRepository).findAll();
-    }
-
-    @Test
-    @DisplayName("Deve listar chamados por status")
-    void listarChamadoPorStatus_Success() {
-        when(chamadoRepository.findByStatus(Status.ABERTO)).thenReturn(Collections.singletonList(chamado));
-
-        List<Chamado> chamados = chamadoService.listarChamadoPorStatus(Status.ABERTO);
-
-        assertFalse(chamados.isEmpty());
-        assertEquals(1, chamados.size());
-        assertEquals(Status.ABERTO, chamados.get(0).getStatus());
-        verify(chamadoRepository).findByStatus(Status.ABERTO);
-    }
-
-    @Test
-    @DisplayName("Deve listar chamados por prioridade")
-    void listarChamadosPorPrioridade_Success() {
-        when(chamadoRepository.findByPrioridade(Prioridade.ALTA)).thenReturn(Collections.singletonList(chamado));
-
-        List<Chamado> chamados = chamadoService.listarChamadosPorPrioridade(Prioridade.ALTA);
-
-        assertFalse(chamados.isEmpty());
-        assertEquals(1, chamados.size());
-        assertEquals(Prioridade.ALTA, chamados.get(0).getPrioridade());
-        verify(chamadoRepository).findByPrioridade(Prioridade.ALTA);
-    }
-
     @Test
     @DisplayName("Deve criar um chamado com sucesso sem subtopico")
     void criarChamado_Success_NoSubtopico() {

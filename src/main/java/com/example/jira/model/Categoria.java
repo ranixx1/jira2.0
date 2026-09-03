@@ -22,6 +22,7 @@ public class Categoria {
     @Column(nullable = false, unique = true)
     private String nome;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "time_id")
     private Time time;

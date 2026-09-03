@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.validation.constraints.NotNull;
 import com.example.jira.enums.Escopo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -48,6 +50,7 @@ public class Chamado {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "categoria_id")
+    @JsonIgnore
     private Categoria categoria;
 
     @ManyToOne
