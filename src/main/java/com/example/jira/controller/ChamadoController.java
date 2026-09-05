@@ -10,7 +10,10 @@ import com.example.jira.dto.ChamadoRequestDTO;
 import com.example.jira.dto.ChamadoResponseDTO;
 import com.example.jira.dto.ComentarioRequestDTO;
 import com.example.jira.enums.*;
+import com.example.jira.dto.AlterarStatusRequestDTO;
+import com.example.jira.dto.ChamadoHistoricoDTO;
 import com.example.jira.model.Chamado;
+import com.example.jira.repository.ChamadoHistoricoRepository;
 import com.example.jira.service.ChamadoService;
 
 import jakarta.validation.Valid;
@@ -22,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 public class ChamadoController {
 
     private final ChamadoService chamadoService;
+    private final ChamadoHistoricoRepository chamadoHistoricoRepository;
 
     @PostMapping
     public ResponseEntity<ChamadoResponseDTO> criarChamado(
@@ -77,11 +81,24 @@ public class ChamadoController {
     }
 
     @PutMapping("/{id}/status")
-    public ResponseEntity<Chamado> alterarStatus(
+    public ResponseEntity<ChamadoResponseDTO> alterarStatus(
             @PathVariable Integer id,
-            @RequestBody Status novoStatus) {
+            @Valid @RequestBody AlterarStatusRequestDTO request,
+            Authentication authentication) {
+
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+
+        Long userId = jwt.getClaim("userId");
+        String username = jwt.getSubject();
+
+        Chamado chamado = chamadoService.alterarStatus(
+                id,
+                request.status(),
+                userId,
+                username);
+
         return ResponseEntity.ok(
-                chamadoService.alterarStatusChamado(id, novoStatus));
+                ChamadoResponseDTO.from(chamado));
     }
 
     @GetMapping
@@ -117,6 +134,19 @@ public class ChamadoController {
                 .map(ChamadoResponseDTO::from)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(dtos);
+    }
+
+    @GetMapping("/{id}/historico")
+    public ResponseEntity<List<ChamadoHistoricoDTO>> listarHistorico(
+            @PathVariable Integer id) {
+
+        List<ChamadoHistoricoDTO> historico = chamadoHistoricoRepository
+                .findByChamadoIdOrderByDataHoraAsc(id)
+                .stream()
+                .map(ChamadoHistoricoDTO::from)
+                .toList();
+
+        return ResponseEntity.ok(historico);
     }
 
     private Long extrairUserId(Authentication authentication) {

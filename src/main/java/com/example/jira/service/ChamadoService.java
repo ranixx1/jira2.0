@@ -1,5 +1,6 @@
 package com.example.jira.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -7,6 +8,8 @@ import org.springframework.stereotype.Service;
 import com.example.jira.dto.ChamadoRequestDTO;
 import com.example.jira.dto.ChamadoResponseDTO;
 import com.example.jira.enums.Escopo;
+import com.example.jira.model.ChamadoHistorico;
+import com.example.jira.repository.ChamadoHistoricoRepository;
 import com.example.jira.enums.Prioridade;
 import com.example.jira.enums.Status;
 import com.example.jira.model.Categoria;
@@ -29,17 +32,20 @@ public class ChamadoService {
     private final CategoriaRepository categoriaRepository;
     private final SubtopicoRepository subtopicoRepository;
     private final PortalRepository portalRepository;
+    private final ChamadoHistoricoRepository chamadoHistoricoRepository;
 
     public ChamadoService(
             ChamadoRepository chamadoRepository,
             CategoriaRepository categoriaRepository,
             SubtopicoRepository subtopicoRepository,
-            PortalRepository portalRepository) {
+            PortalRepository portalRepository,
+            ChamadoHistoricoRepository chamadoHistoricoRepository) {
 
         this.chamadoRepository = chamadoRepository;
         this.categoriaRepository = categoriaRepository;
         this.subtopicoRepository = subtopicoRepository;
         this.portalRepository = portalRepository;
+        this.chamadoHistoricoRepository = chamadoHistoricoRepository;
     }
 
     @Transactional
@@ -70,20 +76,27 @@ public class ChamadoService {
         chamado.setUserId(userId);
         chamado.setOutroSubtopico(req.getOutroSubtopico());
 
-        // precisa persistir uma vez para existir um ID a compor o código
         chamado = chamadoRepository.save(chamado);
 
-        chamado.gerarCodigo();
+        chamado.setCodigo(
+                portal.getCodigo() + "-" + chamado.getId());
 
         chamado = chamadoRepository.save(chamado);
 
+        ChamadoHistorico historico = new ChamadoHistorico(
+                chamado,
+                "CRIADO",
+                "Chamado criado",
+                userId,
+                null);
+
+        chamadoHistoricoRepository.save(historico);
         return ChamadoResponseDTO.from(chamado);
     }
 
     public Chamado buscarChamadoPorId(Integer id) {
         return chamadoRepository.findById(id)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("Chamado não encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Chamado não encontrado"));
     }
 
     @Transactional
@@ -97,13 +110,44 @@ public class ChamadoService {
     }
 
     @Transactional
-    public Chamado alterarStatusChamado(Integer id, Status novoStatus) {
+    public Chamado alterarStatus(
+            Integer id,
+            Status novoStatus,
+            Long userId,
+            String username) {
 
         Chamado chamado = buscarChamadoPorId(id);
 
-        chamado.alterarStatus(novoStatus);
+        if (chamado.getStatus() == Status.FECHADO) {
+            throw new IllegalStateException(
+                    "Não é possível alterar o status de um chamado fechado.");
+        }
 
-        return chamadoRepository.save(chamado);
+        Status statusAnterior = chamado.getStatus();
+
+        if (statusAnterior == novoStatus) {
+            return chamado;
+        }
+
+        chamado.alterarStatus(novoStatus);
+        chamado.setAtualizadoPorUserId(userId);
+        chamado.setHorario_atualizacao(LocalDateTime.now());
+
+        chamado = chamadoRepository.save(chamado);
+
+        ChamadoHistorico historico = new ChamadoHistorico(
+                chamado,
+                "STATUS_ALTERADO",
+                "Status alterado de "
+                        + statusAnterior
+                        + " para "
+                        + novoStatus,
+                userId,
+                username);
+
+        chamadoHistoricoRepository.save(historico);
+
+        return chamado;
     }
 
     @Transactional
@@ -128,7 +172,18 @@ public class ChamadoService {
 
         chamado.adicionarComentario(comentario);
 
-        return chamadoRepository.save(chamado);
+        chamado = chamadoRepository.save(chamado);
+
+        ChamadoHistorico historico = new ChamadoHistorico(
+                chamado,
+                "COMENTARIO_ADICIONADO",
+                "Comentário adicionado",
+                userId,
+                username);
+
+        chamadoHistoricoRepository.save(historico);
+
+        return chamado;
     }
 
     public List<Chamado> listarChamados(Long userId) {
@@ -172,15 +227,13 @@ public class ChamadoService {
     private Portal buscarPortal(Long portalId) {
 
         return portalRepository.findById(portalId)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("Portal não encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Portal não encontrado"));
     }
 
     private Categoria buscarCategoria(Integer categoriaId) {
 
         return categoriaRepository.findById(categoriaId)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("Categoria não encontrada"));
+                .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada"));
     }
 
     private Subtopico buscarSubtopico(Integer subtopicoId) {
@@ -190,8 +243,7 @@ public class ChamadoService {
         }
 
         return subtopicoRepository.findById(subtopicoId)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("Subtópico não encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Subtópico não encontrado"));
     }
 
     private void validarCategoriaDoPortal(
