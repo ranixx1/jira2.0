@@ -68,7 +68,7 @@ public class Chamado {
     @Column(name = "horario_abertura")
     private LocalDateTime horario_abertura;
 
-    @Column(name = "horario_atualizacao") // adicionar usúario que fez a ultima atualização
+    @Column(name = "horario_atualizacao")
     private LocalDateTime horario_atualizacao;
 
     @Enumerated(EnumType.STRING)
