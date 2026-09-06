@@ -25,7 +25,6 @@ import lombok.RequiredArgsConstructor;
 public class ChamadoController {
 
     private final ChamadoService chamadoService;
-    private final ChamadoHistoricoRepository chamadoHistoricoRepository;
 
     @PostMapping
     public ResponseEntity<ChamadoResponseDTO> criarChamado(
@@ -151,13 +150,8 @@ public class ChamadoController {
     public ResponseEntity<List<ChamadoHistoricoDTO>> listarHistorico(
             @PathVariable Integer id) {
 
-        List<ChamadoHistoricoDTO> historico = chamadoHistoricoRepository
-                .findByChamadoIdOrderByDataHoraAsc(id)
-                .stream()
-                .map(ChamadoHistoricoDTO::from)
-                .toList();
-
-        return ResponseEntity.ok(historico);
+        return ResponseEntity.ok(
+                chamadoService.listarHistorico(id));
     }
 
     private Long extrairUserId(Authentication authentication) {

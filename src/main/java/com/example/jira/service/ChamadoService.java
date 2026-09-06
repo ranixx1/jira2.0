@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.example.jira.dto.ChamadoHistoricoDTO;
 import com.example.jira.dto.ChamadoRequestDTO;
 import com.example.jira.dto.ChamadoResponseDTO;
 import com.example.jira.enums.Escopo;
@@ -271,4 +272,14 @@ public class ChamadoService {
                     "O subtópico não pertence à categoria informada.");
         }
     }
+    public List<ChamadoHistoricoDTO> listarHistorico(Integer chamadoId) {
+
+    buscarChamadoPorId(chamadoId);
+
+    return chamadoHistoricoRepository
+            .findByChamadoIdOrderByDataHoraAsc(chamadoId)
+            .stream()
+            .map(ChamadoHistoricoDTO::from)
+            .toList();
+}
 }
