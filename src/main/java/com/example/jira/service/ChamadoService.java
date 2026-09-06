@@ -49,7 +49,10 @@ public class ChamadoService {
     }
 
     @Transactional
-    public ChamadoResponseDTO criarChamado(ChamadoRequestDTO req, Long userId) {
+    public ChamadoResponseDTO criarChamado(
+            ChamadoRequestDTO req,
+            Long userId,
+            String username) {
 
         Portal portal = buscarPortal(req.getPortalId());
 
@@ -88,9 +91,10 @@ public class ChamadoService {
                 "CRIADO",
                 "Chamado criado",
                 userId,
-                null);
+                username);
 
         chamadoHistoricoRepository.save(historico);
+
         return ChamadoResponseDTO.from(chamado);
     }
 
