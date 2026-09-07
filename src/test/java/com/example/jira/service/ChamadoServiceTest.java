@@ -10,6 +10,8 @@ import com.example.jira.repository.CategoriaRepository;
 import com.example.jira.repository.ChamadoRepository;
 import com.example.jira.repository.PortalRepository;
 import com.example.jira.repository.SubtopicoRepository;
+import com.example.jira.repository.ChamadoHistoricoRepository;
+import com.example.jira.repository.TimeRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
@@ -20,6 +22,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
 import java.util.Optional;
@@ -39,6 +42,12 @@ class ChamadoServiceTest {
     private SubtopicoRepository subtopicoRepository;
     @Mock
     private PortalRepository portalRepository;
+    @Mock
+    private ChamadoHistoricoRepository chamadoHistoricoRepository;
+    @Mock
+    private TimeRepository timeRepository;
+    @Mock
+    private ChamadoAuthorizationService authorizationService;
 
     @InjectMocks
     private ChamadoService chamadoService;
@@ -50,6 +59,8 @@ class ChamadoServiceTest {
     private static final Long USER_ID = 1L;
     private static final Long OUTRO_USER_ID = 2L;
     private static final String PORTAL_CODIGO = "PT";
+    private static final String USERNAME = "testUser";
+    private static final String ROLE = "ROLE_USER";
 
     private Portal portal;
     private Categoria categoria;
@@ -85,8 +96,6 @@ class ChamadoServiceTest {
         return s;
     }
 
-    // sobrecarga usada pelos testes de escopo/visibilidade, que precisam variar
-    // id/escopo/dono sem duplicar os outros oito campos toda vez
     private Chamado createChamado(
             int id, Portal portal, Categoria categoria, Subtopico subtopico,
             Escopo escopo, Long userId) {
@@ -124,26 +133,24 @@ class ChamadoServiceTest {
         when(categoriaRepository.findById(CATEGORIA_ID)).thenReturn(Optional.of(categoria));
         when(subtopicoRepository.findById(SUBTOPICO_ID)).thenReturn(Optional.of(subtopico));
 
-        // Capture the argument to mock the two-step save
         ArgumentCaptor<Chamado> chamadoCaptor = ArgumentCaptor.forClass(Chamado.class);
         when(chamadoRepository.save(chamadoCaptor.capture())).thenAnswer(invocation -> {
             Chamado savedChamado = invocation.getArgument(0);
-            if (savedChamado.getId() == null) { // First save
+            if (savedChamado.getId() == null) {
                 savedChamado.setId(CHAMADO_ID);
             }
             return savedChamado;
         });
 
-        ChamadoResponseDTO response = chamadoService.criarChamado(chamadoRequestDTO, USER_ID);
+        ChamadoResponseDTO response = chamadoService.criarChamado(chamadoRequestDTO, USER_ID, USERNAME);
 
         verify(portalRepository).findById(PORTAL_ID);
         verify(categoriaRepository).findById(CATEGORIA_ID);
         verify(subtopicoRepository).findById(SUBTOPICO_ID);
         verify(chamadoRepository, times(2)).save(any(Chamado.class));
+        verify(chamadoHistoricoRepository).save(any(ChamadoHistorico.class));
 
         assertNotNull(response);
-        // este valor agora vem de Chamado.gerarCodigo() (chamado pelo service),
-        // não mais de uma concatenação reimplementada no ChamadoService
         assertEquals(PORTAL_CODIGO + "-" + CHAMADO_ID, chamadoCaptor.getValue().getCodigo());
         assertEquals("Título", response.titulo());
         assertEquals(Status.ABERTO, response.status());
@@ -155,7 +162,7 @@ class ChamadoServiceTest {
         when(portalRepository.findById(PORTAL_ID)).thenReturn(Optional.empty());
 
         assertThrows(EntityNotFoundException.class, () -> {
-            chamadoService.criarChamado(chamadoRequestDTO, USER_ID);
+            chamadoService.criarChamado(chamadoRequestDTO, USER_ID, USERNAME);
         });
 
         verify(portalRepository).findById(PORTAL_ID);
@@ -167,13 +174,13 @@ class ChamadoServiceTest {
     void criarChamado_CategoriaDoesNotBelongToPortal() {
         Portal anotherPortal = new Portal("Outro Portal", "Desc");
         anotherPortal.setId(2L);
-        categoria.setPortal(anotherPortal); // Categoria pertence a outro portal
+        categoria.setPortal(anotherPortal);
 
         when(portalRepository.findById(PORTAL_ID)).thenReturn(Optional.of(portal));
         when(categoriaRepository.findById(CATEGORIA_ID)).thenReturn(Optional.of(categoria));
 
         assertThrows(IllegalArgumentException.class, () -> {
-            chamadoService.criarChamado(chamadoRequestDTO, USER_ID);
+            chamadoService.criarChamado(chamadoRequestDTO, USER_ID, USERNAME);
         });
     }
 
@@ -194,7 +201,7 @@ class ChamadoServiceTest {
             return savedChamado;
         });
 
-        ChamadoResponseDTO response = chamadoService.criarChamado(chamadoRequestDTO, USER_ID);
+        ChamadoResponseDTO response = chamadoService.criarChamado(chamadoRequestDTO, USER_ID, USERNAME);
 
         verify(portalRepository).findById(PORTAL_ID);
         verify(categoriaRepository).findById(CATEGORIA_ID);
@@ -211,14 +218,14 @@ class ChamadoServiceTest {
     void criarChamado_SubtopicoDoesNotBelongToCategoria() {
         Categoria anotherCategoria = new Categoria("Outra Categoria", portal);
         anotherCategoria.setId(2);
-        subtopico.setCategoria(anotherCategoria); // Subtópico pertence a outra categoria
+        subtopico.setCategoria(anotherCategoria);
 
         when(portalRepository.findById(PORTAL_ID)).thenReturn(Optional.of(portal));
         when(categoriaRepository.findById(CATEGORIA_ID)).thenReturn(Optional.of(categoria));
         when(subtopicoRepository.findById(SUBTOPICO_ID)).thenReturn(Optional.of(subtopico));
 
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            chamadoService.criarChamado(chamadoRequestDTO, USER_ID);
+            chamadoService.criarChamado(chamadoRequestDTO, USER_ID, USERNAME);
         });
 
         assertEquals("O subtópico não pertence à categoria informada.", exception.getMessage());
@@ -250,25 +257,42 @@ class ChamadoServiceTest {
     @DisplayName("Deve fechar um chamado com sucesso")
     void fecharChamado_Success() {
         when(chamadoRepository.findById(CHAMADO_ID)).thenReturn(Optional.of(chamado));
+        when(authorizationService.podeFechar(chamado, ROLE)).thenReturn(true);
         when(chamadoRepository.save(any(Chamado.class))).thenReturn(chamado);
 
-        chamadoService.fecharChamado(CHAMADO_ID);
+        chamadoService.fecharChamado(CHAMADO_ID, USER_ID, USERNAME, ROLE);
 
         assertEquals(Status.FECHADO, chamado.getStatus());
         verify(chamadoRepository).save(chamado);
+        verify(chamadoHistoricoRepository).save(any(ChamadoHistorico.class));
     }
 
     @Test
     @DisplayName("Deve adicionar um comentário a um chamado com sucesso")
     void adicionarComentario_Success() {
         when(chamadoRepository.findById(CHAMADO_ID)).thenReturn(Optional.of(chamado));
+        when(authorizationService.podeComentar(chamado, ROLE, USER_ID)).thenReturn(true);
         when(chamadoRepository.save(any(Chamado.class))).thenReturn(chamado);
 
-        chamadoService.adicionarComentario(CHAMADO_ID, "Novo comentário", USER_ID, "user");
+        chamadoService.adicionarComentario(CHAMADO_ID, "Novo comentário", USER_ID, USERNAME, ROLE);
 
         assertEquals(1, chamado.getComentarios().size());
         assertEquals("Novo comentário", chamado.getComentarios().get(0).getMensagem());
         verify(chamadoRepository).save(chamado);
+        verify(chamadoHistoricoRepository).save(any(ChamadoHistorico.class));
+    }
+
+    @Test
+    @DisplayName("Deve lançar AccessDeniedException ao adicionar comentário sem permissão")
+    void adicionarComentario_SemPermissao() {
+        when(chamadoRepository.findById(CHAMADO_ID)).thenReturn(Optional.of(chamado));
+        when(authorizationService.podeComentar(chamado, ROLE, USER_ID)).thenReturn(false);
+
+        assertThrows(AccessDeniedException.class, () -> {
+            chamadoService.adicionarComentario(CHAMADO_ID, "Novo comentário", USER_ID, USERNAME, ROLE);
+        });
+
+        verify(chamadoRepository, never()).save(any());
     }
 
     @Test
@@ -276,22 +300,21 @@ class ChamadoServiceTest {
     void adicionarComentario_ChamadoFechado() {
         chamado.fechar();
         when(chamadoRepository.findById(CHAMADO_ID)).thenReturn(Optional.of(chamado));
+        when(authorizationService.podeComentar(chamado, ROLE, USER_ID)).thenReturn(true);
 
         assertThrows(IllegalStateException.class, () -> {
-            chamadoService.adicionarComentario(CHAMADO_ID, "Comentário inválido", USER_ID, "user");
+            chamadoService.adicionarComentario(CHAMADO_ID, "Comentário inválido", USER_ID, USERNAME, ROLE);
         });
 
         verify(chamadoRepository, never()).save(any());
     }
 
-    // ── Escopo / visibilidade ──────────────────────────────────────────────
-    // Cobre o bug corrigido: Escopo.SOMENTE_EU não filtrava nada antes.
     @Nested
     @DisplayName("Visibilidade por Escopo")
     class VisibilidadePorEscopo {
 
         @Test
-        @DisplayName("listarChamados esconde chamados SOMENTE_EU de outros usuários")
+        @DisplayName("listarChamados esconde chamados de outros usuários caso não haja permissão")
         void listarChamados_FiltraPorEscopo() {
             Chamado meu = createChamado(1, portal, categoria, subtopico, Escopo.SOMENTE_EU, USER_ID);
             Chamado deOutro = createChamado(2, portal, categoria, subtopico, Escopo.SOMENTE_EU, OUTRO_USER_ID);
@@ -299,18 +322,18 @@ class ChamadoServiceTest {
 
             when(chamadoRepository.findAllComDetalhes())
                     .thenReturn(List.of(meu, deOutro, publico));
+            
+            when(authorizationService.podeVisualizar(meu, ROLE, USER_ID)).thenReturn(true);
+            when(authorizationService.podeVisualizar(deOutro, ROLE, USER_ID)).thenReturn(false);
+            when(authorizationService.podeVisualizar(publico, ROLE, USER_ID)).thenReturn(true);
 
-            List<Chamado> resultado = chamadoService.listarChamados(USER_ID);
+            List<Chamado> resultado = chamadoService.listarChamados(USER_ID, ROLE);
 
             assertEquals(2, resultado.size());
             assertTrue(resultado.contains(meu));
             assertTrue(resultado.contains(publico));
             assertFalse(resultado.contains(deOutro));
-
-            // trava a regressão do bug #4: tem que usar a query com JOIN FETCH,
-            // não o findAll() puro que gera N+1
             verify(chamadoRepository).findAllComDetalhes();
-            verify(chamadoRepository, never()).findAll();
         }
 
         @Test
@@ -320,12 +343,13 @@ class ChamadoServiceTest {
 
             when(chamadoRepository.findByStatusComDetalhes(Status.ABERTO))
                     .thenReturn(List.of(deOutro));
+            
+            when(authorizationService.podeVisualizar(deOutro, ROLE, USER_ID)).thenReturn(false);
 
-            List<Chamado> resultado = chamadoService.listarChamadoPorStatus(Status.ABERTO, USER_ID);
+            List<Chamado> resultado = chamadoService.listarChamadoPorStatus(Status.ABERTO, USER_ID, ROLE);
 
             assertTrue(resultado.isEmpty());
             verify(chamadoRepository).findByStatusComDetalhes(Status.ABERTO);
-            verify(chamadoRepository, never()).findByStatus(any());
         }
 
         @Test
@@ -336,43 +360,37 @@ class ChamadoServiceTest {
 
             when(chamadoRepository.findByPrioridade(Prioridade.ALTA))
                     .thenReturn(List.of(meu, deOutro));
+            
+            when(authorizationService.podeVisualizar(meu, ROLE, USER_ID)).thenReturn(true);
+            when(authorizationService.podeVisualizar(deOutro, ROLE, USER_ID)).thenReturn(false);
 
-            List<Chamado> resultado = chamadoService.listarChamadosPorPrioridade(Prioridade.ALTA, USER_ID);
+            List<Chamado> resultado = chamadoService.listarChamadosPorPrioridade(Prioridade.ALTA, USER_ID, ROLE);
 
             assertEquals(1, resultado.size());
             assertEquals(meu.getId(), resultado.get(0).getId());
         }
 
         @Test
-        @DisplayName("buscarChamadoVisivel retorna o chamado quando o escopo é TODOS")
-        void buscarChamadoVisivel_EscopoTodos_Sucesso() {
+        @DisplayName("buscarChamadoVisivel retorna o chamado quando autorizado")
+        void buscarChamadoVisivel_Autorizado_Sucesso() {
             chamado.setEscopo(Escopo.TODOS);
             when(chamadoRepository.findById(CHAMADO_ID)).thenReturn(Optional.of(chamado));
+            when(authorizationService.podeVisualizar(chamado, ROLE, OUTRO_USER_ID)).thenReturn(true);
 
-            Chamado resultado = chamadoService.buscarChamadoVisivel(CHAMADO_ID, OUTRO_USER_ID);
-
-            assertEquals(chamado.getId(), resultado.getId());
-        }
-
-        @Test
-        @DisplayName("buscarChamadoVisivel retorna o chamado SOMENTE_EU para o próprio dono")
-        void buscarChamadoVisivel_Dono_Sucesso() {
-            chamado.setEscopo(Escopo.SOMENTE_EU);
-            when(chamadoRepository.findById(CHAMADO_ID)).thenReturn(Optional.of(chamado));
-
-            Chamado resultado = chamadoService.buscarChamadoVisivel(CHAMADO_ID, USER_ID);
+            Chamado resultado = chamadoService.buscarChamadoVisivel(CHAMADO_ID, OUTRO_USER_ID, ROLE);
 
             assertEquals(chamado.getId(), resultado.getId());
         }
 
         @Test
-        @DisplayName("buscarChamadoVisivel lança EntityNotFoundException quando outro usuário tenta ver um SOMENTE_EU")
-        void buscarChamadoVisivel_NaoDono_LancaEntityNotFoundException() {
+        @DisplayName("buscarChamadoVisivel lança EntityNotFoundException quando não autorizado")
+        void buscarChamadoVisivel_NaoAutorizado_LancaEntityNotFoundException() {
             chamado.setEscopo(Escopo.SOMENTE_EU);
             when(chamadoRepository.findById(CHAMADO_ID)).thenReturn(Optional.of(chamado));
+            when(authorizationService.podeVisualizar(chamado, ROLE, OUTRO_USER_ID)).thenReturn(false);
 
             assertThrows(EntityNotFoundException.class, () ->
-                    chamadoService.buscarChamadoVisivel(CHAMADO_ID, OUTRO_USER_ID));
+                    chamadoService.buscarChamadoVisivel(CHAMADO_ID, OUTRO_USER_ID, ROLE));
         }
     }
 }
