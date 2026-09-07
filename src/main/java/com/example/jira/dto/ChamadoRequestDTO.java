@@ -1,5 +1,7 @@
 package com.example.jira.dto;
 
+import java.util.Set;
+
 import com.example.jira.enums.Escopo;
 import com.example.jira.enums.Prioridade;
 
@@ -27,4 +29,6 @@ public class ChamadoRequestDTO {
     private Prioridade prioridade;
     @NotNull
     private Escopo escopo;
+
+    private Set<Integer> timeIds;
 }

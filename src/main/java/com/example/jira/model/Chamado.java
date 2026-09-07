@@ -2,7 +2,9 @@ package com.example.jira.model;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -22,7 +24,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import lombok.Getter;
@@ -92,6 +96,10 @@ public class Chamado {
 
     @OneToMany(mappedBy = "chamado", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = false)
     private List<ChamadoHistorico> historico = new ArrayList<>();
+
+    @ManyToMany 
+    @JoinTable (name = "chamado_times", joinColumns = @JoinColumn(name = "chamado_id"), inverseJoinColumns = @JoinColumn(name = "time_id"))
+    private Set<Time> times = new HashSet<>();
 
     public Chamado(
             Portal portal,
