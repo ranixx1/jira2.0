@@ -26,7 +26,6 @@ import com.example.jira.repository.ChamadoHistoricoRepository;
 import com.example.jira.repository.ChamadoRepository;
 import com.example.jira.repository.PortalRepository;
 import com.example.jira.repository.SubtopicoRepository;
-import com.example.jira.repository.TimeRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -39,7 +38,7 @@ public class ChamadoService {
     private final SubtopicoRepository subtopicoRepository;
     private final PortalRepository portalRepository;
     private final ChamadoHistoricoRepository chamadoHistoricoRepository;
-    private final TimeRepository timeRepository;
+    private final TimeService timeService;
     private final ChamadoAuthorizationService authorizationService;
 
     public ChamadoService(
@@ -48,7 +47,7 @@ public class ChamadoService {
             SubtopicoRepository subtopicoRepository,
             PortalRepository portalRepository,
             ChamadoHistoricoRepository chamadoHistoricoRepository,
-            TimeRepository timeRepository,
+            TimeService timeService,
             ChamadoAuthorizationService authorizationService) {
 
         this.chamadoRepository = chamadoRepository;
@@ -56,7 +55,7 @@ public class ChamadoService {
         this.subtopicoRepository = subtopicoRepository;
         this.portalRepository = portalRepository;
         this.chamadoHistoricoRepository = chamadoHistoricoRepository;
-        this.timeRepository = timeRepository;
+        this.timeService = timeService;
         this.authorizationService = authorizationService;
     }
 
@@ -73,13 +72,15 @@ public class ChamadoService {
             validarSubtopicoDaCategoria(subtopico, categoria);
         }
 
-	Set<Time> times;
+        Set<Time> times;
 
-	if (req.getEscopo() == Escopo.SOMENTE_EU) {
-	    times = new HashSet<>(timeRepository.findByMembrosContaining(userId));
-	} else {
-	    times = new HashSet<>();
-	}
+        if (req.getEscopo() == Escopo.SOMENTE_EU) {
+            times = timeService.obterTimesParaEscopoSomenteEu(userId);
+        } else {
+            times = new HashSet<>();
+        }
+        
+        validarEscopo(req.getEscopo(), times);
 
         Chamado chamado = new Chamado(
                 portal,
@@ -259,32 +260,6 @@ public class ChamadoService {
                 .stream()
                 .map(ChamadoHistoricoDTO::from)
                 .toList();
-    }
-
-    private Set<Time> buscarTimesDoUsuario(Set<Integer> timeIds, Long userId) {
-        Set<Time> timesDoUsuario = new HashSet<>(timeRepository.findByMembrosContaining(userId));
-
-        if (timeIds == null || timeIds.isEmpty()) {
-            return new HashSet<>();
-        }
-
-        Set<Time> timesSelecionados = new HashSet<>(timeRepository.findAllById(timeIds));
-
-        if (timesSelecionados.size() != timeIds.size()) {
-            throw new EntityNotFoundException("Um ou mais times não foram encontrados.");
-        }
-
-        boolean possuiTimeNaoPertencente = !timesDoUsuario.containsAll(timesSelecionados);
-
-        if (possuiTimeNaoPertencente) {
-            throw new AccessDeniedException("Você só pode selecionar times dos quais faz parte.");
-        }
-
-        return timesSelecionados;
-    }
-
-    public List<Time> listarTimesDoUsuario(Long userId) {
-        return timeRepository.findByMembrosContaining(userId);
     }
 
     private void validarEscopo(Escopo escopo, Set<Time> times) {

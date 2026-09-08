@@ -44,7 +44,6 @@ public class TimeController {
         return ResponseEntity.noContent().build();
     }
 
-    // ── Membros ────────────────────────────────────────────────────────────
 
     @GetMapping("/{id}/membros")
     public ResponseEntity<Set<Long>> listarMembros(@PathVariable Integer id) {
