@@ -25,8 +25,9 @@ public class ChamadoAuthorizationService {
             return true;
         }
 
-        return chamado.getTimes().stream()
-                .anyMatch(time -> time.getMembros().contains(userId));
+        return chamado.getTimes()
+        .stream()
+        .anyMatch(time -> time.getMembros().contains(userId));
     }
 
     public boolean podeComentar(Chamado chamado, String role, Long userId) {

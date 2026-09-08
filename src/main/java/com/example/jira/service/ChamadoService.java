@@ -73,9 +73,13 @@ public class ChamadoService {
             validarSubtopicoDaCategoria(subtopico, categoria);
         }
 
-        Set<Time> times = buscarTimesDoUsuario(req.getTimeIds(), userId);
+	Set<Time> times;
 
-        validarEscopo(req.getEscopo(), times);
+	if (req.getEscopo() == Escopo.SOMENTE_EU) {
+	    times = new HashSet<>(timeRepository.findByMembrosContaining(userId));
+	} else {
+	    times = new HashSet<>();
+	}
 
         Chamado chamado = new Chamado(
                 portal,
